@@ -1,10 +1,6 @@
 ### Testing for PE bias in RL setting
 
-To train a single network on the orientation discrimination task using RL, and evaluate it over a range of contrast and noise values, run:
-```
-python3 ./train_and_eval.py
-```
-To train and evaluate multiple networks, run:
+To train multiple networks on the orientation discrimination task using RL, and evaluate over a range of contrast and noise values, run:
 ```
 ./train_and_eval.sh
 ```
