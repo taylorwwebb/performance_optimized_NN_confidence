@@ -1,6 +1,6 @@
-# Peformance-optimized Neural Networks as an Explanatory Framework for Decision Confidence
+# Peformance-Optimized Neural Networks as an Explanatory Framework for Decision Confidence
 
-Code for the paper 'Peformance-optimized Neural Networks as an Explanatory Framework for Decision Confidence'. Code for each set of experiments, along with detailed instructions, are contained within separate directories.
+Code for the paper 'Peformance-Optimized Neural Networks as an Explanatory Framework for Decision Confidence'. Code for each set of experiments, along with detailed instructions, are contained within separate directories.
 
 ## Prerequisites
 
