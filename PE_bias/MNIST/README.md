@@ -1,10 +1,6 @@
 ### Testing for PE bias using MNIST dataset
 
-To train a single network on the MNIST training set and evaluate it over a range of contrast and noise values, run:
-```
-python3 ./train_and_eval.py
-```
-To train and evaluate multiple networks, run:
+To train multiple networks on the MNIST training set and evaluate them over a range of contrast and noise values, run:
 ```
 ./train_and_eval.sh
 ```
