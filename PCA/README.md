@@ -16,3 +16,7 @@ To test for sensitivity of principal components to PE bias, run:
 ```
 python3 ./PCA_PE_test.py
 ```
+To evaluate relationship between contrast and variance along PC 1 (supplementary analyses), navigate to `./test/` and run:
+```
+python3 ./PC1_contrast_vs_var.py
+```
