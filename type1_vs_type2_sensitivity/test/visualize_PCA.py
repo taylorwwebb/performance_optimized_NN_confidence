@@ -185,7 +185,7 @@ def main():
 
 	# Settings
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--N_runs', type=int, default=100)
+	parser.add_argument('--N_runs', type=int, default=1)
 	parser.add_argument('--axis_fontsize', type=int, default=18)
 	parser.add_argument('--ticks_fontsize', type=int, default=16)
 	parser.add_argument('--legend_fontsize', type=int, default=16)
