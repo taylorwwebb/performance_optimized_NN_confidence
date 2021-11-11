@@ -50,3 +50,11 @@ To plot original behavioral results, run:
 ```
 python3 ./plot_d_vs_meta_d.py --model_behavior behavior
 ```
+To evaluate response of principal components to this task (analyses in supplementary material), first run:
+```
+python3 ./eval_final_PCA.py
+```
+then navigate to `./test/` and run:
+```
+python3 ./visualize_PCA.py
+```
