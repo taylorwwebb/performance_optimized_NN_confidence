@@ -7,6 +7,7 @@ To train multiple networks on each of four different training regimes, and evalu
 To analyze results, navigate to `./PE_test/` and run:
 ```
 python3 ./PE_test.py
+python3 ./PE_test_correct_incorrect.py
 ```
 
 To train multiple networks on each of four different training regimes, and evaluate type-2 sensitivity, run:
