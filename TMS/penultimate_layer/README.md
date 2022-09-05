@@ -1,4 +1,4 @@
-### Simulating TMS to penultimate (z) layer 
+### Simulating TMS to penultimate layer 
 
 To train multiple networks on two-choice variant of MNIST, and evaluate over range of TMS noise levels, run:
 ```
