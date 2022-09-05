@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
-from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import argparse
 import os
@@ -19,12 +18,9 @@ def check_path(path):
 	if not os.path.exists(path):
 		os.mkdir(path)
 
-def train(args, encoder, class_out, conf_out, 
-		device, train_loader, optimizer, epoch):
+def train(args, encoder, class_out, conf_out, device, train_loader, optimizer, epoch):
 	# Create file for saving training progress
-	train_prog_dir = './train_prog_PE_test/'
-	check_path(train_prog_dir)
-	train_prog_dir += args.train_regime + '/'
+	train_prog_dir = './train_prog/'
 	check_path(train_prog_dir)
 	model_dir = train_prog_dir + 'run' + str(args.run) + '/'
 	check_path(model_dir)
@@ -43,26 +39,14 @@ def train(args, encoder, class_out, conf_out,
 		x = data.to(device)
 		y_targ = target.to(device)
 		# Scale signal
-		if args.train_regime == 'standard' or args.train_regime == 'fixed_sigma_mu_ratio' or args.train_regime == 'fixed_sigma':
-			signal = ((torch.rand(x.shape[0]) * (args.signal_range[1] - args.signal_range[0])) + args.signal_range[0]).to(device)
-			x = x * signal.view(-1, 1, 1, 1)
-		elif args.train_regime == 'fixed_mu':
-			x = x * args.signal_val
+		signal = ((torch.rand(x.shape[0]) * (args.signal_range[1] - args.signal_range[0])) + args.signal_range[0]).to(device)
+		x = x * signal.view(-1, 1, 1, 1)
 		# Scale to [-1, 1]
 		x = (x - 0.5) / 0.5
 		# Add noise
-		if args.train_regime == 'standard' or args.train_regime == 'fixed_mu':
-			noise = (torch.rand(x.shape[0]) * (args.noise_range[1] - args.noise_range[0])) + args.noise_range[0]
-			noise = noise.view(-1, 1, 1, 1).repeat(1, 1, x.shape[2], x.shape[3])
-			noise = (torch.randn(x.shape) * noise).to(device)
-		elif args.train_regime == 'fixed_sigma_mu_ratio':
-			noise = signal * args.signal_noise_ratio
-			noise = noise.view(-1, 1, 1, 1).repeat(1, 1, x.shape[2], x.shape[3])
-			noise = (torch.randn(x.shape)).to(device) * noise
-		elif args.train_regime == 'fixed_sigma':
-			noise = torch.ones(x.shape[0]) * args.noise_val
-			noise = noise.view(-1, 1, 1, 1).repeat(1, 1, x.shape[2], x.shape[3])
-			noise = (torch.randn(x.shape)).to(device) * noise.to(device)
+		noise = (torch.rand(x.shape[0]) * (args.noise_range[1] - args.noise_range[0])) + args.noise_range[0]
+		noise = noise.view(-1, 1, 1, 1).repeat(1, 1, x.shape[2], x.shape[3])
+		noise = (torch.randn(x.shape) * noise).to(device)
 		x = x + noise
 		# Threshold image
 		x = nn.Hardtanh()(x)
@@ -71,7 +55,7 @@ def train(args, encoder, class_out, conf_out,
 		# Get model predictions
 		z = encoder(x, device)
 		y_pred = class_out(z)
-		conf = conf_out(z).squeeze()
+		conf = conf_out(z)
 		# Classification loss
 		class_loss_fn = torch.nn.CrossEntropyLoss()
 		class_loss = class_loss_fn(y_pred, y_targ)
@@ -81,12 +65,12 @@ def train(args, encoder, class_out, conf_out,
 		class_acc = correct_preds.mean().item() * 100.0
 		# Confidence loss
 		conf_loss_fn = torch.nn.BCELoss()
-		conf_loss = conf_loss_fn(conf, correct_preds)
+		conf_loss = conf_loss_fn(conf.squeeze(), correct_preds)
 		# Combine losses and update model
 		combined_loss = class_loss + conf_loss
 		combined_loss.backward()
 		optimizer.step()
-		# Overall confidence
+		# Overall confidence 
 		avg_conf = conf.mean().item() * 100.0
 		# Batch duration
 		end_time = time.time()
@@ -108,7 +92,7 @@ def train(args, encoder, class_out, conf_out,
 				               '{:.2f}'.format(avg_conf) + '\n')
 	train_prog_f.close()
 
-def PE_test(args, encoder, class_out, conf_out, device, loader, signal=1.0, noise=0.0):
+def test(args, encoder, class_out, conf_out, device, loader, signal=1.0, noise=0.0):
 	# Set to evaluation mode
 	encoder.eval()
 	class_out.eval()
@@ -131,14 +115,14 @@ def PE_test(args, encoder, class_out, conf_out, device, loader, signal=1.0, nois
 		# Get model predictions
 		z = encoder(x, device)
 		y_pred = class_out(z)
-		conf = conf_out(z).squeeze()
+		conf = conf_out(z)
 		# Collect responses
 		# Correct predictions
 		_, y_pred_argmax = y_pred.max(1)
 		correct_preds = torch.eq(y_pred_argmax, y_targ).type(torch.float)
 		all_test_correct_preds.append(correct_preds.detach().cpu().numpy())
 		# Confidence
-		all_test_conf.append(conf.detach().cpu().numpy())
+		all_test_conf.append(conf.squeeze().detach().cpu().numpy())
 	# Average test accuracy and confidence
 	all_test_correct_preds = np.concatenate(all_test_correct_preds)
 	all_test_conf = np.concatenate(all_test_conf)
@@ -161,15 +145,11 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--train-batch-size', type=int, default=32)
 	parser.add_argument('--test-batch-size', type=int, default=100)
-	parser.add_argument('--train_regime', type=str, default='standard', help="{'standard', 'fixed_sigma_mu_ratio', 'fixed_sigma', 'fixed_mu'}")
-	parser.add_argument('--signal_range', type=list, default=[0.1,1.0])
-	parser.add_argument('--signal_val', type=float, default=0.5)
-	parser.add_argument('--signal_noise_ratio', type=float, default=3.75)
+	parser.add_argument('--signal_range', type=list, default=[0.1, 1.0])
+	parser.add_argument('--signal_range_test', type=list, default=[0.0, 1.0])
+	parser.add_argument('--signal_N_test', type=int, default=500)
 	parser.add_argument('--noise_range', type=list, default=[1.0, 2.0])
-	parser.add_argument('--noise_val', type=float, default=1.5)
-	parser.add_argument('--signal_range_PE_test', type=list, default=[0.0,1.0])
-	parser.add_argument('--N_signal_PE_test', type=int, default=500)
-	parser.add_argument('--N_noise_PE_test', type=int, default=2)
+	parser.add_argument('--noise_N_test', type=int, default=2)
 	parser.add_argument('--img_size', type=int, default=32)
 	parser.add_argument('--latent_dim', type=int, default=100)
 	parser.add_argument('--epochs', type=int, default=5)
@@ -220,11 +200,13 @@ def main():
 		# Training loop
 		train(args, encoder, class_out, conf_out, device, train_loader, optimizer, epoch)
 
-	# PE test
-	log.info('PE test...')
+	# Test
+	log.info('Test...')
+	# Evaluate without noise
+	test_acc_noiseless, _, __, ___ = test(args, encoder, class_out, conf_out, device, test_loader, signal=1, noise=0)
 	# Signal and noise values for test
-	signal_test_vals = np.linspace(args.signal_range_PE_test[0], args.signal_range_PE_test[1], args.N_signal_PE_test)
-	noise_test_vals = np.linspace(args.noise_range[0], args.noise_range[1], args.N_noise_PE_test)
+	signal_test_vals = np.linspace(args.signal_range_test[0], args.signal_range_test[1], args.signal_N_test)
+	noise_test_vals = np.linspace(args.noise_range[0], args.noise_range[1], args.noise_N_test)
 	all_test_acc = []
 	all_test_conf = []
 	all_test_conf_correct = []
@@ -235,7 +217,7 @@ def main():
 		all_signal_test_conf_correct = []
 		all_signal_test_conf_incorrect = []
 		for s in range(signal_test_vals.shape[0]):
-			test_acc, test_conf, test_conf_correct, test_conf_incorrect = PE_test(args, encoder, class_out, conf_out, device, test_loader, signal=signal_test_vals[s], noise=noise_test_vals[n])
+			test_acc, test_conf, test_conf_correct, test_conf_incorrect = test(args, encoder, class_out, conf_out, device, test_loader, signal=signal_test_vals[s], noise=noise_test_vals[n])
 			all_signal_test_acc.append(test_acc)
 			all_signal_test_conf.append(test_conf)
 			all_signal_test_conf_correct.append(test_conf_correct)
@@ -245,15 +227,14 @@ def main():
 		all_test_conf_correct.append(all_signal_test_conf_correct)
 		all_test_conf_incorrect.append(all_signal_test_conf_incorrect)
 	# Save test results
-	test_dir = './PE_test/'
-	check_path(test_dir)
-	test_dir += args.train_regime + '/'
+	test_dir = './test/'
 	check_path(test_dir)
 	model_dir = test_dir + 'run' + str(args.run) + '/'
 	check_path(model_dir)
-	np.savez(model_dir + 'PE_test_results.npz',
+	np.savez(model_dir + 'test_results.npz',
 			 signal_test_vals=signal_test_vals,
 			 noise_test_vals=noise_test_vals,
+			 test_acc_noiseless=test_acc_noiseless,
 			 all_test_acc=np.array(all_test_acc),
 			 all_test_conf=np.array(all_test_conf),
 			 all_test_conf_correct=np.array(all_test_conf_correct),
