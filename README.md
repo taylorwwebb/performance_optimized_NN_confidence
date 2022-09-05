@@ -1,6 +1,8 @@
-# Peformance-Optimized Neural Networks as an Explanatory Framework for Decision Confidence
+# Natural statistics support a rational account of confidence biases
 
-Code for the paper [Peformance-Optimized Neural Networks as an Explanatory Framework for Decision Confidence](https://www.biorxiv.org/content/10.1101/2021.09.28.462081v1). Code for each set of experiments, along with detailed instructions, are contained within separate directories.
+Code for the paper [Natural statistics support a rational account of confidence biases](https://www.biorxiv.org/content/10.1101/2021.09.28.462081v1). 
+
+Code for each set of experiments, along with detailed instructions, are contained within separate directories.
 
 ## Prerequisites
 
