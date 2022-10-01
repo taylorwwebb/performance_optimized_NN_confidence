@@ -1,6 +1,6 @@
 # Natural Statistics Support a Rational Account of Confidence Biases
 
-Code for the paper [Natural Statistics Support a Rational Account of Confidence Biases](https://www.biorxiv.org/content/10.1101/2021.09.28.462081v1). 
+Code for the paper [Natural Statistics Support a Rational Account of Confidence Biases](https://www.biorxiv.org/content/10.1101/2021.09.28.462081v4). 
 
 Code for each set of experiments, along with detailed instructions, are contained within separate directories.
 
